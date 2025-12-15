@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Literacy Spiral Curriculum (Y2-Y6)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #FDFBF7; color: #4B5563; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        
+        /* Custom Utilities */
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+        .tab-active { border-bottom: 3px solid #D97706; color: #92400E; font-weight: 600; }
+        .tab-inactive { border-bottom: 3px solid transparent; color: #9CA3AF; }
+        .tab-inactive:hover { color: #4B5563; border-bottom-color: #E5E7EB; }
+        
+        /* Animation */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals & Earthy Accents -->
+    <!-- Background: #FDFBF7 (Off-White/Cream) -->
+    <!-- Primary Text: #4B5563 (Cool Gray) -->
+    <!-- Accents: #D97706 (Amber/Gold), #059669 (Emerald), #DB2777 (Pink/Magenta for Creative) -->
+
+    <!-- Application Structure Plan: 
+         1. **Hero Section**: Contextualizes the Spiral Curriculum and the 3 Framework Pillars (Conceptual, Critical, Creative).
+         2. **Curriculum Explorer (Main UI)**: A tabbed interface representing the progressive journey from Year 2 to Year 6.
+         3. **Year View**:
+            - **Header**: Theme & Conceptual Goal.
+            - **Interactive Concept Lab**: A simplified, interactive simulation relevant to that year's specific AI theme (e.g., a bias slider for Y4, a probability visualizer for Y5). This anchors the theory in practice.
+            - **Activities Module**: A grid of the 3 core activities. Clicking an activity expands it to show lesson breakdowns, NCCE links, and HPL integration.
+         4. **Cross-Year Analytics**: A dashboard view (Radar Chart) showing how the focus shifts from Recognition (Y2) to Systems/Ethics (Y6).
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. **Framework Radar Chart (Chart.js)**: 
+            - Goal: Visualize the balance of literacies (Conceptual, Critical, Creative) per year.
+            - Interaction: Filter by year to see the shape change.
+            - Justification: Best for multivariate comparison.
+         2. **Y4 Bias Simulator (Chart.js Bar)**:
+            - Goal: Demonstrate "Garbage In, Garbage Out".
+            - Interaction: Buttons to "Inject Bias" into the dataset, updating the chart in real-time.
+            - Justification: Immediate visual feedback on how data affects model output.
+         3. **Y5 Probability Engine (HTML/JS)**:
+            - Goal: Explain LLM "Next Word Prediction".
+            - Interaction: Click words to see their calculated "probability" scores.
+            - Justification: Demystifies the "magic" of ChatGPT.
+         4. **Y6 Filter Bubble (Chart.js Scatter)**:
+            - Goal: Visualize clustering and echo chambers.
+            - Interaction: Static conceptual view with tooltips explaining user groups.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-gray-800 tracking-tight">AI Literacy <span class="text-amber-600">Spiral</span></span>
+                    <span class="ml-3 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">Y2 - Y6 Curriculum</span>
+                </div>
+                <nav class="hidden md:flex space-x-1" aria-label="Tabs">
+                    <button onclick="switchYear('overview')" id="nav-overview" class="tab-active px-3 py-2 font-medium text-sm transition-colors">Framework</button>
+                    <button onclick="switchYear('y2')" id="nav-y2" class="tab-inactive px-3 py-2 font-medium text-sm transition-colors">Year 2</button>
+                    <button onclick="switchYear('y3')" id="nav-y3" class="tab-inactive px-3 py-2 font-medium text-sm transition-colors">Year 3</button>
+                    <button onclick="switchYear('y4')" id="nav-y4" class="tab-inactive px-3 py-2 font-medium text-sm transition-colors">Year 4</button>
+                    <button onclick="switchYear('y5')" id="nav-y5" class="tab-inactive px-3 py-2 font-medium text-sm transition-colors">Year 5</button>
+                    <button onclick="switchYear('y6')" id="nav-y6" class="tab-inactive px-3 py-2 font-medium text-sm transition-colors">Year 6</button>
+                </nav>
+                <!-- Mobile Menu Button (Simplified for SPA) -->
+                <div class="md:hidden">
+                    <select onchange="switchYear(this.value)" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-amber-500 focus:border-amber-500 sm:text-sm rounded-md">
+                        <option value="overview">Framework</option>
+                        <option value="y2">Year 2: Recognition</option>
+                        <option value="y3">Year 3: Data</option>
+                        <option value="y4">Year 4: Bias</option>
+                        <option value="y5">Year 5: GenAI</option>
+                        <option value="y6">Year 6: Ethics</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- SECTION: FRAMEWORK OVERVIEW -->
+        <div id="view-overview" class="fade-in block">
+            <div class="text-center mb-10">
+                <h1 class="text-4xl font-extrabold text-gray-900 sm:text-5xl mb-4">Building the Ethical Architect</h1>
+                <p class="max-w-2xl mx-auto text-xl text-gray-500">
+                    A spiral curriculum moving from recognition of robots to the design of ethical systems. 
+                    Explore how the three literacies evolve from Year 2 to Year 6.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <!-- Card 1: Conceptual -->
+                <div class="bg-white overflow-hidden shadow rounded-lg border-t-4 border-blue-500">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
+                                <span class="text-2xl">⚙️</span>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dt class="text-sm font-medium text-gray-500 truncate">Conceptual Literacy</dt>
+                                <dd class="text-lg font-medium text-gray-900">The "How"</dd>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-600">
+                            Understanding datasets, algorithms, probability, and models. Moving from magic to mechanics.
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 2: Critical -->
+                <div class="bg-white overflow-hidden shadow rounded-lg border-t-4 border-red-500">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
+                                <span class="text-2xl">⚖️</span>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dt class="text-sm font-medium text-gray-500 truncate">Critical Literacy</dt>
+                                <dd class="text-lg font-medium text-gray-900">The "Why"</dd>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-600">
+                            Evaluating bias, ethics, hallucinations, and societal impact. Questioning the machine.
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 3: Creative -->
+                <div class="bg-white overflow-hidden shadow rounded-lg border-t-4 border-emerald-500">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 bg-emerald-100 rounded-md p-3">
+                                <span class="text-2xl">🎨</span>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dt class="text-sm font-medium text-gray-500 truncate">Creative Literacy</dt>
+                                <dd class="text-lg font-medium text-gray-900">The "Application"</dd>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-sm text-gray-600">
+                            Co-creation, prompting, and human-in-the-loop design. Using AI as a tool for augmentation.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization: Radar Chart -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="mb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Curriculum Evolution Analysis</h3>
+                    <p class="mt-1 text-sm text-gray-500">Observe how the focus shifts as students mature. Use the buttons to toggle years.</p>
+                </div>
+                <div class="flex justify-center space-x-2 mb-4">
+                    <button onclick="toggleDataset(0)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs">Y2</button>
+                    <button onclick="toggleDataset(1)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs">Y3</button>
+                    <button onclick="toggleDataset(2)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs">Y4</button>
+                    <button onclick="toggleDataset(3)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs">Y5</button>
+                    <button onclick="toggleDataset(4)" class="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs">Y6</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="overviewChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: YEAR CONTENT (Dynamic) -->
+        <div id="view-year" class="hidden fade-in">
+            <!-- Theme Banner -->
+            <div id="year-banner" class="rounded-xl p-8 mb-8 text-white shadow-lg bg-gradient-to-r from-amber-600 to-orange-600 transition-colors duration-500">
+                <div class="md:flex md:items-center md:justify-between">
+                    <div>
+                        <h4 id="year-subtitle" class="text-amber-100 font-semibold uppercase tracking-wider text-sm">Year 2</h4>
+                        <h2 id="year-title" class="text-3xl font-bold mt-1">Robots, Rules, and Recognition</h2>
+                        <p id="year-goal" class="mt-3 text-lg text-amber-50 max-w-3xl">
+                            Conceptual Goal: Understanding that computers need instructions and that AI can "guess" based on what it sees/hears.
+                        </p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex-shrink-0 bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+                        <span class="block text-sm font-medium text-amber-50">Focus</span>
+                        <span id="year-focus-icon" class="text-3xl">🤖</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column: Activities -->
+                <div class="lg:col-span-2 space-y-6">
+                    <h3 class="text-xl font-bold text-gray-800 border-b pb-2">Core Activities</h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Click on an activity card below to reveal the detailed lesson plan, NCCE alignment, and High Performance Learning (HPL) links.
+                    </p>
+                    <div id="activities-container" class="space-y-4">
+                        <!-- Activities injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Concept Lab -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden sticky top-24">
+                        <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="font-bold text-gray-800">Interactive Concept Lab</h3>
+                            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">Simulation</span>
+                        </div>
+                        <div class="p-6">
+                            <p id="lab-description" class="text-sm text-gray-600 mb-6">
+                                Interact with the visualization below to understand the core technical concept for this year.
+                            </p>
+                            
+                            <!-- DYNAMIC LAB CONTENT -->
+                            <div id="lab-container" class="w-full bg-gray-50 rounded border border-gray-200 min-h-[250px] flex flex-col items-center justify-center p-4 relative">
+                                <!-- Content changes based on year -->
+                            </div>
+
+                            <div class="mt-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-100">
+                                <strong>Teacher Note:</strong> Use this simulation to prompt discussion before starting the unplugged or coding activities.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-400">
+                &copy; 2025 AI Literacy Curriculum Design. Aligned with NCCE & HPL Frameworks.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- DATA STORE ---
+        const curriculumData = {
+            y2: {
+                title: "Robots, Rules, and Recognition",
+                subtitle: "Year 2",
+                goal: "Understanding that computers need instructions and that AI can 'guess' based on what it sees/hears.",
+                icon: "🤖",
+                color: "from-amber-500 to-orange-600",
+                labType: "y2-recognition",
+                labDesc: "Test the difference between a 'Rule-Based' machine (Toaster) and an 'AI' agent (Robot). Click the inputs to see how they react.",
+                activities: [
+                    {
+                        title: "Activity 1: Is it a Robot?",
+                        duration: "3 Lessons",
+                        ncce: "IT Around Us",
+                        hpl: "Meta-thinking (Classifying)",
+                        type: "Conceptual",
+                        lessons: [
+                            "L1: Sorting game 'Magic or Machine?'. Intro to processor.",
+                            "L2: Input/Output. Buttons vs. Voice.",
+                            "L3: Critical Literacy - 'Can it feel?'. Empathy discussion."
+                        ]
+                    },
+                    {
+                        title: "Activity 2: Teaching the Computer",
+                        duration: "4 Lessons",
+                        ncce: "Robot Algorithms",
+                        hpl: "Agility (Practice)",
+                        type: "Conceptual/Creative",
+                        lessons: [
+                            "L1: Human Robot Game. Strict instructions vs errors.",
+                            "L2: 'Quick Draw' (Google). AI guessing drawings.",
+                            "L3: Conceptual Deep Dive - Training Data (Practice).",
+                            "L4: Creative Play - Tricking the AI."
+                        ]
+                    },
+                    {
+                        title: "Activity 3: Digital Assistants",
+                        duration: "3 Lessons",
+                        ncce: "Digital Photography (Adapted)",
+                        hpl: "Empathy",
+                        type: "Critical",
+                        lessons: [
+                            "L1: Roleplay 'Alexa/Siri'. How do they hear?",
+                            "L2: The 'Wake Word'. Listening for sounds.",
+                            "L3: Critical Literacy - Privacy basics. When to turn it off."
+                        ]
+                    }
+                ]
+            },
+            y3: {
+                title: "The Data Detectives",
+                subtitle: "Year 3",
+                goal: "Understanding that AI learns from data and sorts things into categories.",
+                icon: "🔍",
+                color: "from-emerald-500 to-teal-600",
+                labType: "y3-classification",
+                labDesc: "Simulate a 'Decision Tree'. Help the AI sort the animal by answering the questions.",
+                activities: [
+                    {
+                        title: "Activity 1: The Sorting Hat",
+                        duration: "4 Lessons",
+                        ncce: "Branching Databases",
+                        hpl: "Linking",
+                        type: "Conceptual",
+                        lessons: [
+                            "L1: Manual sorting. Physical branching database.",
+                            "L2: Teachable Machine. Train 'Happy' vs 'Sad' face.",
+                            "L3: Supervised Learning. Labels & Learning.",
+                            "L4: Testing on new faces."
+                        ]
+                    },
+                    {
+                        title: "Activity 2: Prediction Patterns",
+                        duration: "3 Lessons",
+                        ncce: "Sequencing Sounds",
+                        hpl: "Agility",
+                        type: "Conceptual/Creative",
+                        lessons: [
+                            "L1: Music patterns. Identifying next note.",
+                            "L2: AI predicts 'next thing' based on 'last thing'.",
+                            "L3: AI Music Generator co-creation."
+                        ]
+                    },
+                    {
+                        title: "Activity 3: Smart Sensors",
+                        duration: "3 Lessons",
+                        ncce: "Connecting Computers",
+                        hpl: "Critical Thinking",
+                        type: "Critical",
+                        lessons: [
+                            "L1: What can a computer sense? (Light, Sound).",
+                            "L2: Smart Home Design. Students design a 'Smart Bedroom'.",
+                            "L3: Reliability. 'Garbage In, Garbage Out' intro."
+                        ]
+                    }
+                ]
+            },
+            y4: {
+                title: "Training the Machine",
+                subtitle: "Year 4",
+                goal: "Understanding the link between Training Data quality and Model Performance (Bias).",
+                icon: "⚖️",
+                color: "from-blue-500 to-indigo-600",
+                labType: "y4-bias",
+                labDesc: "The 'Bias Slider'. Adjust the training data mix and see how the AI's accuracy changes for different groups.",
+                activities: [
+                    {
+                        title: "Activity 1: Garbage In, Garbage Out",
+                        duration: "4 Lessons",
+                        ncce: "Data Logging",
+                        hpl: "Intellectual Confidence",
+                        type: "Conceptual/Critical",
+                        lessons: [
+                            "L1: 'Classify the Fish' (AI for Oceans).",
+                            "L2: Intentionally train wrongly (Bias injection).",
+                            "L3: Real-world bias discussion (Doctors).",
+                            "L4: Retrain for fairness."
+                        ]
+                    },
+                    {
+                        title: "Activity 2: The Art of Training",
+                        duration: "3 Lessons",
+                        ncce: "Photo Editing",
+                        hpl: "Hard Work",
+                        type: "Creative/Conceptual",
+                        lessons: [
+                            "L1: How computers see images (Pixels).",
+                            "L2: AutoDraw. Squiggle to Object.",
+                            "L3: Create digital poster. Acknowledge AI help."
+                        ]
+                    },
+                    {
+                        title: "Activity 3: Rules vs. AI",
+                        duration: "3 Lessons",
+                        ncce: "Repetition in Shapes",
+                        hpl: "Meta-thinking",
+                        type: "Conceptual",
+                        lessons: [
+                            "L1: Code a Sprite (Deterministic).",
+                            "L2: ML for Kids - Voice control Sprite (Probabilistic).",
+                            "L3: Comparison. Confidence scores explained."
+                        ]
+                    }
+                ]
+            },
+            y5: {
+                title: "The Creative Co-Pilot",
+                subtitle: "Year 5",
+                goal: "Understanding Generative AI (LLMs), Probability, and Hallucinations.",
+                icon: "✨",
+                color: "from-purple-500 to-pink-600",
+                labType: "y5-llm",
+                labDesc: "The 'Next Word' Predictor. See how AI calculates the probability of the next word. Click to generate.",
+                activities: [
+                    {
+                        title: "Activity 1: The Next Word Game",
+                        duration: "4 Lessons",
+                        ncce: "Sharing Information",
+                        hpl: "Critical Thinking",
+                        type: "Conceptual",
+                        lessons: [
+                            "L1: Unplugged Sentence Completion.",
+                            "L2: How ChatGPT works (Probability).",
+                            "L3: Experimenting with Temperature/Randomness.",
+                            "L4: Hallucination hunting."
+                        ]
+                    },
+                    {
+                        title: "Activity 2: Prompt Engineering 101",
+                        duration: "3 Lessons",
+                        ncce: "Vector Drawing (Adapted)",
+                        hpl: "Agility",
+                        type: "Creative",
+                        lessons: [
+                            "L1: Formula: Context + Instruction + Constraint.",
+                            "L2: 'Prompt Battle' for specific styles.",
+                            "L3: Human-in-the-Loop design project."
+                        ]
+                    },
+                    {
+                        title: "Activity 3: Deepfakes & Media",
+                        duration: "3 Lessons",
+                        ncce: "Video Production",
+                        hpl: "Critical Thinking",
+                        type: "Critical",
+                        lessons: [
+                            "L1: Analyzing video - Real or Fake?",
+                            "L2: How GANs work (Creator vs Critic).",
+                            "L3: Ethics, trust, and misinformation."
+                        ]
+                    }
+                ]
+            },
+            y6: {
+                title: "The Ethical Architect",
+                subtitle: "Year 6",
+                goal: "Recommendation Engines, Algorithmic Bias in Society, and Complex Systems.",
+                icon: "🏛️",
+                color: "from-red-500 to-rose-600",
+                labType: "y6-ethics",
+                labDesc: "The 'Echo Chamber' Visualizer. See how recommendation algorithms cluster users and isolate them.",
+                activities: [
+                    {
+                        title: "Activity 1: The Recommendation Engine",
+                        duration: "4 Lessons",
+                        ncce: "Spreadsheets",
+                        hpl: "Linking",
+                        type: "Conceptual",
+                        lessons: [
+                            "L1: Analyze 'Watch History' dataset.",
+                            "L2: Collaborative Filtering logic.",
+                            "L3: The Filter Bubble concept.",
+                            "L4: Designing a 'Fair' algorithm."
+                        ]
+                    },
+                    {
+                        title: "Activity 2: AI for Good",
+                        duration: "4 Lessons",
+                        ncce: "Web Page Creation",
+                        hpl: "Empathy",
+                        type: "Creative/Synthesis",
+                        lessons: [
+                            "L1: Identify UN SDG.",
+                            "L2: Brainstorm solutions with AI.",
+                            "L3: Prototype pitch website.",
+                            "L4: Disclosure Statement (AI vs Human parts)."
+                        ]
+                    },
+                    {
+                        title: "Activity 3: The Turing Test",
+                        duration: "3 Lessons",
+                        ncce: "Communication",
+                        hpl: "Connection Finding",
+                        type: "Critical/Conceptual",
+                        lessons: [
+                            "L1: History - Alan Turing.",
+                            "L2: Chatbot Challenge (Human vs Bot).",
+                            "L3: Final Reflection - What makes us human?"
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // --- STATE & INIT ---
+        let currentYear = 'overview';
+        let overviewChartInstance = null;
+        let labChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderOverview();
+        });
+
+        // --- NAVIGATION LOGIC ---
+        function switchYear(year) {
+            currentYear = year;
+            
+            // Update Tab Styles
+            const tabs = ['overview', 'y2', 'y3', 'y4', 'y5', 'y6'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`nav-${t}`);
+                if(el) {
+                    if (t === year) {
+                        el.classList.remove('tab-inactive');
+                        el.classList.add('tab-active');
+                    } else {
+                        el.classList.remove('tab-active');
+                        el.classList.add('tab-inactive');
+                    }
+                }
+            });
+
+            // View Switching
+            if (year === 'overview') {
+                document.getElementById('view-year').classList.add('hidden');
+                document.getElementById('view-overview').classList.remove('hidden');
+                renderOverview();
+            } else {
+                document.getElementById('view-overview').classList.add('hidden');
+                document.getElementById('view-year').classList.remove('hidden');
+                renderYearContent(year);
+            }
+            window.scrollTo(0, 0);
+        }
+
+        // --- RENDER FUNCTIONS ---
+
+        function renderOverview() {
+            const ctx = document.getElementById('overviewChart').getContext('2d');
+            
+            if (overviewChartInstance) {
+                // If chart exists, just reset data visibility
+                overviewChartInstance.destroy(); // Easier to rebuild for clean toggle state
+            }
+
+            const data = {
+                labels: ['Conceptual', 'Critical', 'Creative'],
+                datasets: [
+                    { label: 'Year 2', data: [80, 20, 40], borderColor: '#D97706', backgroundColor: 'rgba(217, 119, 6, 0.2)' },
+                    { label: 'Year 3', data: [70, 30, 40], borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.2)', hidden: true },
+                    { label: 'Year 4', data: [60, 50, 50], borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.2)', hidden: true },
+                    { label: 'Year 5', data: [50, 40, 90], borderColor: '#9333EA', backgroundColor: 'rgba(147, 51, 234, 0.2)', hidden: true },
+                    { label: 'Year 6', data: [40, 90, 60], borderColor: '#DC2626', backgroundColor: 'rgba(220, 38, 38, 0.2)', hidden: true }
+                ]
+            };
+
+            overviewChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function toggleDataset(index) {
+            if (overviewChartInstance) {
+                const meta = overviewChartInstance.getDatasetMeta(index);
+                meta.hidden = meta.hidden === null ? !overviewChartInstance.data.datasets[index].hidden : null;
+                overviewChartInstance.update();
+            }
+        }
+
+        function renderYearContent(yearKey) {
+            const data = curriculumData[yearKey];
+            
+            // 1. Update Header
+            document.getElementById('year-subtitle').innerText = data.subtitle;
+            document.getElementById('year-title').innerText = data.title;
+            document.getElementById('year-goal').innerText = data.goal;
+            document.getElementById('year-focus-icon').innerText = data.icon;
+            document.getElementById('year-banner').className = `rounded-xl p-8 mb-8 text-white shadow-lg bg-gradient-to-r ${data.color} transition-colors duration-500`;
+
+            // 2. Render Concept Lab
+            document.getElementById('lab-description').innerText = data.labDesc;
+            renderConceptLab(data.labType);
+
+            // 3. Render Activities
+            const container = document.getElementById('activities-container');
+            container.innerHTML = '';
+            
+            data.activities.forEach((act, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer";
+                div.onclick = function() { this.querySelector('.details').classList.toggle('hidden'); };
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600 mb-2">${act.type}</span>
+                            <h4 class="text-lg font-bold text-gray-900">${act.title}</h4>
+                            <div class="text-sm text-gray-500 mt-1">Duration: ${act.duration}</div>
+                        </div>
+                        <div class="text-gray-400">▼</div>
+                    </div>
+                    
+                    <div class="details hidden mt-4 pt-4 border-t border-gray-100 animate-fade-in">
+                        <div class="mb-3">
+                            <span class="text-xs font-bold text-gray-400 uppercase">NCCE Link</span>
+                            <p class="text-sm text-gray-700">${act.ncce}</p>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-xs font-bold text-gray-400 uppercase">HPL Link</span>
+                            <p class="text-sm text-gray-700">${act.hpl}</p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase">Lessons</span>
+                            <ul class="list-disc pl-4 mt-1 text-sm text-gray-600 space-y-1">
+                                ${act.lessons.map(l => `<li>${l}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- INTERACTIVE LAB RENDERERS ---
+
+        function renderConceptLab(type) {
+            const container = document.getElementById('lab-container');
+            container.innerHTML = ''; // Clear prev
+            if (labChartInstance) { labChartInstance.destroy(); labChartInstance = null; }
+
+            if (type === 'y2-recognition') {
+                // HTML Interaction: Rule-based vs AI
+                container.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4 w-full text-center">
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                            <h5 class="font-bold text-gray-700 mb-2">Toaster (Machine)</h5>
+                            <button onclick="alert('Toast is ready! (I only do one thing)')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm w-full mb-2">Insert Bread</button>
+                            <button onclick="alert('Nothing happens. I need Bread.')" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm w-full">Say "Hello"</button>
+                        </div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-orange-200 ring-2 ring-orange-100">
+                            <h5 class="font-bold text-orange-700 mb-2">Smart Speaker (AI)</h5>
+                            <button onclick="alert('Playing music...')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 px-4 py-2 rounded text-sm w-full mb-2">Say "Play Music"</button>
+                            <button onclick="alert('I do not understand that command yet.')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 px-4 py-2 rounded text-sm w-full">Say "Jump"</button>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-xs text-gray-500">Notice: The Machine ignores voice. The AI tries to interpret intention.</p>
+                `;
+            } 
+            else if (type === 'y3-classification') {
+                // HTML Interaction: Decision Tree
+                container.innerHTML = `
+                    <div class="flex flex-col items-center w-full space-y-4">
+                        <div class="bg-emerald-100 p-2 rounded text-emerald-800 font-bold">Start: Is it an animal?</div>
+                        <div class="w-0.5 h-4 bg-gray-300"></div>
+                        <div class="flex space-x-8">
+                            <button onclick="document.getElementById('tree-res').innerText = 'Not an animal!'" class="bg-white border hover:bg-gray-50 px-3 py-1 rounded text-sm">No</button>
+                            <button onclick="document.getElementById('branch-2').classList.remove('hidden')" class="bg-white border hover:bg-gray-50 px-3 py-1 rounded text-sm">Yes</button>
+                        </div>
+                        
+                        <div id="branch-2" class="hidden flex flex-col items-center space-y-4 w-full">
+                            <div class="w-0.5 h-4 bg-gray-300"></div>
+                            <div class="bg-emerald-100 p-2 rounded text-emerald-800 font-bold text-sm">Does it bark?</div>
+                            <div class="flex space-x-8">
+                                <button onclick="document.getElementById('tree-res').innerText = 'It is a Cat!'" class="bg-white border hover:bg-gray-50 px-3 py-1 rounded text-sm">No</button>
+                                <button onclick="document.getElementById('tree-res').innerText = 'It is a Dog!'" class="bg-white border hover:bg-gray-50 px-3 py-1 rounded text-sm">Yes</button>
+                            </div>
+                        </div>
+
+                        <div id="tree-res" class="mt-4 font-bold text-lg text-emerald-600 min-h-[2rem]"></div>
+                    </div>
+                `;
+            }
+            else if (type === 'y4-bias') {
+                // Chart.js: Bias Simulation
+                container.innerHTML = `
+                    <div class="w-full h-full flex flex-col">
+                        <div class="flex justify-center space-x-2 mb-2">
+                            <button onclick="updateBiasChart('balanced')" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Balanced Data</button>
+                            <button onclick="updateBiasChart('biased')" class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Biased Data</button>
+                        </div>
+                        <div class="chart-container" style="height: 200px">
+                            <canvas id="biasChart"></canvas>
+                        </div>
+                    </div>
+                `;
+                setTimeout(() => initBiasChart(), 100);
+            }
+            else if (type === 'y5-llm') {
+                // JS: Probability Text
+                container.innerHTML = `
+                    <div class="text-center w-full">
+                        <div class="text-xl font-serif mb-4">"The cat sat on the <span id="word-slot" class="border-b-2 border-purple-400 cursor-pointer text-purple-600 font-bold" onclick="generateWord()">...</span>"</div>
+                        <div id="probs" class="text-xs text-gray-500 font-mono h-16">
+                            Click the dots to predict the next word based on probability.
+                        </div>
+                    </div>
+                `;
+            }
+            else if (type === 'y6-ethics') {
+                // Chart.js: Filter Bubbles
+                container.innerHTML = `
+                    <div class="w-full h-full">
+                        <div class="chart-container" style="height: 220px">
+                            <canvas id="bubbleChart"></canvas>
+                        </div>
+                        <p class="text-xs text-center mt-2 text-gray-400">Clusters represent groups of users who only see content they agree with.</p>
+                    </div>
+                `;
+                setTimeout(() => initBubbleChart(), 100);
+            }
+        }
+
+        // --- SPECIFIC CHART LOGIC ---
+
+        function initBiasChart() {
+            const ctx = document.getElementById('biasChart').getContext('2d');
+            labChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Recognize Doctors (Male)', 'Recognize Doctors (Female)'],
+                    datasets: [{
+                        label: 'Accuracy %',
+                        data: [90, 90],
+                        backgroundColor: ['#3B82F6', '#EC4899']
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        function updateBiasChart(mode) {
+            if(!labChartInstance) return;
+            if(mode === 'balanced') {
+                labChartInstance.data.datasets[0].data = [90, 90];
+            } else {
+                labChartInstance.data.datasets[0].data = [98, 15]; // Biased result
+            }
+            labChartInstance.update();
+        }
+
+        function generateWord() {
+            const slot = document.getElementById('word-slot');
+            const probDiv = document.getElementById('probs');
+            
+            const r = Math.random();
+            let word = "Mat";
+            let probs = "Mat (85%) | Sofa (10%) | Dog (5%)";
+            
+            if(r > 0.95) word = "Dog";
+            else if (r > 0.85) word = "Sofa";
+            
+            slot.innerText = word;
+            probDiv.innerHTML = `Calculated Probabilities:<br>${probs}`;
+        }
+
+        function initBubbleChart() {
+            const ctx = document.getElementById('bubbleChart').getContext('2d');
+            labChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Bubble A (Sports Fans)',
+                            data: [{x: 10, y: 20}, {x: 15, y: 25}, {x: 12, y: 18}, {x: 14, y: 22}],
+                            backgroundColor: '#EF4444'
+                        },
+                        {
+                            label: 'Bubble B (Tech Geeks)',
+                            data: [{x: 80, y: 80}, {x: 85, y: 75}, {x: 82, y: 88}, {x: 78, y: 82}],
+                            backgroundColor: '#3B82F6'
+                        },
+                        {
+                            label: 'Bubble C (Gardeners)',
+                            data: [{x: 80, y: 20}, {x: 85, y: 25}, {x: 75, y: 15}],
+                            backgroundColor: '#10B981'
+                        }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    },
+                    plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
